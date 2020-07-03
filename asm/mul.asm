@@ -61,8 +61,7 @@ multiply_long_long:
                 mov             r12, rsp
                 
                 mov             rdi, r12
-                mov             r8, r15
-                imul            r8, 2
+                imul            rcx, 2
                 call            set_zero
                 
                 mov             r9, r12
