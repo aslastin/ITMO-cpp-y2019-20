@@ -1,34 +1,32 @@
                 section         .text
 
                 global          _start
-                
-dlong_qlength:  equ                 256                
+                               
 long_qlength:   equ                 128                 
                 
 _start:
 
-                sub             rsp, 3 * long_qlength * 8
-                lea             rdi, [rsp + dlong_qlength * 8]
+                sub             rsp, 2 * long_qlength * 8
+                lea             rdi, [rsp + long_qlength * 8]
                 mov             rcx, long_qlength
                 call            read_long
                 mov             rdi, rsp
-                mov             rcx, dlong_qlength
                 call            read_long
                 
-                lea             r15, [rsp + dlong_qlength * 8]
-                mov             r14, rdi
-                sub             rsp, 2 * dlong_qlength * 8
-                lea             r13, [rsp + dlong_qlength * 8]
-                mov             r12, rsp
+                lea             rsi, [rsp + long_qlength * 8]
+                sub             rsp, 2 * long_qlength * 8
+                mov             r11, rsp
                 
                 mov             rdi, rsp
-                mov             rcx, dlong_qlength * 2
+                mov             rcx, long_qlength * 2
                 call            set_zero
                 
+                lea             rdi, [rsp + long_qlength * 2 * 8]
+                mov             rcx, long_qlength             
                 call            multiply_long_long
 
-                mov             rdi, r12
-                mov             rcx, dlong_qlength
+                mov             rdi, r11
+                mov             rcx, long_qlength * 2
                 call            write_long
 
                 mov             al, 0x0a
@@ -37,68 +35,78 @@ _start:
                 jmp             exit
 
                 
- ;multiplies two long numbers
-;    r12 -- address of answer, length == dlong_qlength
-;    r13 -- address of acc, length == dlong_qlength
-;    r14 -- address of summand #1 (long number), length == dlong_qlength
-;    r15 -- address of summand #2 (long number), length == long_qlength
+; multiplies two long numbers
+;    rsi -- address of first long number
+;    rdi -- address of second long number
 ;    rcx -- length of long numbers in qwords
+;    r11 -- address of result
+; local:
+;    r11 -- address of tmp result
+;    r12 -- address of accumulator
 ; result:
-;    sum is written to r12
+;    r11 -- address of result
 multiply_long_long:
 
-                push            r12
-                push            r13
-                push            r14
-                push            r15
+                push            rsi
+                push            rdi
+                push            rcx
                 
-                            
-                mov             rcx, long_qlength
+                mov             r13, rsi
+                mov             r14, rdi
+                mov             r15, rcx
                 
+                mov             r8, rcx
+                imul            r8, 16
+                sub             rsp, r8
+                mov             r12, rsp
+                
+                mov             r9, r12
+                mov             r8, r15
                 
                 clc
 .loop:
-                mov             rdi, r15
-                mov             rbx, 10
-                call            div_long_short
-                
-                mov             rcx, dlong_qlength
-                
-                mov             rbx, rdx
-                mov             rdi, r14
-                mov             r10, r13
+; Умножаю 1-ое число на текущий разряд 2-ого.
+                mov             rbx, [r14]
+                add             r14, 8
+                mov             rdi, r13
+                mov             r10, r9
+                mov             rcx, r15
                 call            mul_long_short
-                
-                
-                mov             rdi, r12
-                mov             rsi, r13
+ 
+; Результат умножения мог вылезти за длину числа, поэтому не забываю прибавить этот остаток.
+                mov             rax, [r9 + r15 * 8]
+                mov             rbx, [r9 + r15 * 8 + 8]
+                add             rax, rsi
+                adc             rbx, 0
+                mov             [r9 + r15 * 8], rax
+                mov             [r9 + r15 * 8 + 8], rbx
+
+; Складываю accumulator и текущий результат.
+                mov             rdi, r11
+                mov             rsi, r12
+                mov             rcx, r15
+                imul            rcx, 2
                 call            add_long_long
+ 
+; Зануляю младший разряд accumulator и сдвигаю адрес, имитируя сдвиг на длину разряда при умножении.
+                xor             rax, rax
+                mov             [r9], rax
+                add             r9, 8
                 
-                
-                mov             rbx, 10
-                mov             rdi, r14
-                mov             r10, r14
-                call            mul_long_short
-                
-                mov             rdi, r15
-                mov             rcx, long_qlength
-                call            is_zero
+                dec             r8
                 jnz             .loop
 
+                imul            r15, 16
+                add             rsp, r15
                 
-                
-                pop             r15
-                pop             r14
-                pop             r13
-                pop             r12
-                
+                pop             rcx
+                pop             rdi
+                pop             rsi
                 ret               
                 
-                
-                
 ; adds two long number
-;    rdi -- address of summand #1 (long number)
-;    rsi -- address of summand #2 (long number)
+;    rdi -- address of long number #1
+;    rsi -- address of long number #2
 ;    rcx -- length of long numbers in qwords
 ; result:
 ;    sum is written to rdi
@@ -120,7 +128,7 @@ add_long_long:
                 pop             rsi
                 pop             rdi
                 ret
-
+                
 ; adds 64-bit number to long number
 ;    rdi -- address of summand #1 (long number)
 ;    rax -- summand #2 (64-bit unsigned)
@@ -151,6 +159,7 @@ add_long_short:
 ;    rdi -- address of multiplier #1 (long number)
 ;    rbx -- multiplier #2 (64-bit unsigned)
 ;    rcx -- length of long number in qwords
+;    r10 -- address of result
 ; result:
 ;    product is written to r10
 mul_long_short:
@@ -384,5 +393,5 @@ print_string:
 
 
                 section         .rodata               
-invalid_char_msg:               db              "Invalid character: "
+invalid_char_msg:               db                 "Invalid character: "
 invalid_char_msg_size:          equ             $ - invalid_char_msg
