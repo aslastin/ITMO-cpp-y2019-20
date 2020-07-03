@@ -60,6 +60,11 @@ multiply_long_long:
                 sub             rsp, r8
                 mov             r12, rsp
                 
+                mov             rdi, r12
+                mov             r8, r15
+                imul            r8, 2
+                call            set_zero
+                
                 mov             r9, r12
                 mov             r8, r15
                 
