@@ -58,7 +58,6 @@ struct vector
 
 private:
     size_t increase_capacity() const;
-    void push_back_realloc(T const&);
     void new_buffer(size_t new_capacity);
     void full_clear();
     void init_fields(T* data, size_t size, size_t capacity);
@@ -102,24 +101,6 @@ size_t vector<T>::increase_capacity() const
     return capacity_ ? 2 * capacity_ : 1;
 }
 
-template <typename T>
-void vector<T>::push_back_realloc(const T & val)
-{
-    T* data = static_cast<T*>(operator new (sizeof(T) * increase_capacity()));
-    size_t size = size_;
-    try
-    {
-        copy_construct_all(data, data_, size_);
-        new (data + size_) T(val);
-        full_clear();
-    }
-    catch (...)
-    {
-        operator delete(data);
-        throw;
-    }
-    init_fields(data, size + 1, increase_capacity());
-}
 
 template <typename T>
 void vector<T>::new_buffer(size_t new_capacity)
@@ -145,6 +126,8 @@ void vector<T>::full_clear()
     clear();
     if (data_)
         operator delete (data_);
+    data_ = nullptr;
+    capacity_ = 0;
 }
 
 template <typename T>
@@ -256,7 +239,7 @@ void vector<T>::push_back(T const& val)
 {
     if (size_ == capacity_)
     {
-        push_back_realloc(val);
+        insert(end(), val);
     }
     else
     {
@@ -299,7 +282,7 @@ void vector<T>::shrink_to_fit()
         if (size_)
             new_buffer(size_);
         else
-            data_ = nullptr;
+            full_clear();
     }
 }
 
@@ -349,7 +332,7 @@ typename vector<T>::const_iterator vector<T>::end() const
 template <typename T>
 typename vector<T>::iterator vector<T>::insert(typename vector<T>::iterator pos, T const& val)
 {
-    if (pos == data_ + size_)
+    if (pos == end() && size_ < capacity_)
     {
         push_back(val);
         return end();
@@ -359,12 +342,12 @@ typename vector<T>::iterator vector<T>::insert(typename vector<T>::iterator pos,
 
     if (size_ == capacity_)
     {
-        T* data = static_cast<T*>(operator new (sizeof(T) * increase_capacity()));
+        size_t capacity = increase_capacity();
+        T* data = static_cast<T*>(operator new (sizeof(T) * capacity));
         size_t size = size_;
         try
         {
-            if (shift)
-                copy_construct_all(data, data_, shift - 1);
+            copy_construct_all(data, data_, shift);
             new (data + shift) T(val);
             copy_construct_all(data + shift + 1, data_ + shift, size_ - shift);
             full_clear();
@@ -374,7 +357,7 @@ typename vector<T>::iterator vector<T>::insert(typename vector<T>::iterator pos,
             operator delete (data);
             throw;
         }
-        init_fields(data, size + 1, increase_capacity());
+        init_fields(data, size + 1, capacity);
         return data_ + shift;
     }
     else
@@ -416,6 +399,12 @@ typename vector<T>::iterator vector<T>::erase(const_iterator pos)
 template <typename T>
 typename vector<T>::iterator vector<T>::erase(typename vector<T>::iterator first, typename vector<T>::iterator last)
 {
+    if (last == end() && first == last - 1)
+    {
+        pop_back();
+        return end();
+    }
+
     if (last > first && size_)
     {
         iterator it_end = end();
