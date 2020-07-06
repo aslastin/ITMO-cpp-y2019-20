@@ -54,53 +54,49 @@ multiply_long_long:
                 mov             r13, rsi
                 mov             r14, rdi
                 mov             r15, rcx
-                
-                mov             r8, rcx
-                imul            r8, 16
+                inc             r15
+; Выделяю доп память (1 qword) для остатка умножения 
+
+                mov             r8, r15
+                imul            r8, 8
                 sub             rsp, r8
                 mov             r12, rsp
                 
                 mov             rdi, r12
-                imul            rcx, 2
+                mov             rcx, r15
                 call            set_zero
                 
-                mov             r9, r12
+                mov             r9, r11
                 mov             r8, r15
+                dec             r8
                 
                 clc
 .loop:
+
 ; Умножаю 1-ое число на текущий разряд 2-ого.
                 mov             rbx, [r14]
                 add             r14, 8
                 mov             rdi, r13
-                mov             r10, r9
+                mov             r10, r12
                 mov             rcx, r15
+                dec             rcx  
                 call            mul_long_short
- 
-; Результат умножения мог вылезти за длину числа, поэтому не забываю прибавить этот остаток.
-                mov             rax, [r9 + r15 * 8]
-                mov             rbx, [r9 + r15 * 8 + 8]
-                add             rax, rsi
-                adc             rbx, 0
-                mov             [r9 + r15 * 8], rax
-                mov             [r9 + r15 * 8 + 8], rbx
-
+; Результат умножения мог вылезти за длину числа, поэтому не забываю добавить этот остаток.
+                mov             [r12 + r15 * 8 - 8], rsi
+                
 ; Складываю accumulator и текущий результат.
-                mov             rdi, r11
+                mov             rdi, r9
                 mov             rsi, r12
                 mov             rcx, r15
-                imul            rcx, 2
                 call            add_long_long
  
-; Зануляю младший разряд accumulator и сдвигаю адрес, имитируя сдвиг на длину разряда при умножении.
-                xor             rax, rax
-                mov             [r9], rax
+; Сдвигаю позицию, куда буду добавлять в следующий раз accumulator, имитируя сдвиг при умножении
                 add             r9, 8
                 
                 dec             r8
                 jnz             .loop
 
-                imul            r15, 16
+                imul            r15, 8
                 add             rsp, r15
                 
                 pop             rcx
@@ -165,7 +161,8 @@ add_long_short:
 ;    rcx -- length of long number in qwords
 ;    r10 -- address of result
 ; result:
-;    product is written to r10
+;    product is written to r10 (r10 can be equal to rdi)
+;    reminder is written to rsi   
 mul_long_short:
                 push            r10
                 push            rax
