@@ -28,7 +28,6 @@ struct vector
     T& back();                              // O(1) nothrow
     T const& back() const;                  // O(1) nothrow
     void push_back(T const&);               // O(1)* strong
-
     void pop_back();                        // O(1) nothrow
 
     bool empty() const;                     // O(1) nothrow
@@ -57,8 +56,11 @@ struct vector
     iterator erase(const_iterator first, const_iterator last); // O(N) weak
 
 private:
-    size_t increase_capacity() const;
+    void destroy_all(T* data, size_t i);
+    void copy_construct_all(T* dst, T const* src, size_t size);
+    size_t get_increased_capacity() const;
     void new_buffer(size_t new_capacity);
+    void push_back_realloc(T const&);
     void full_clear();
     void init_fields(T* data, size_t size, size_t capacity);
 
@@ -68,23 +70,27 @@ private:
     size_t capacity_;
 };
 
-// Helpful functions
+// Private methods
 
 template <typename T>
-void destroy_all(T* data, size_t i)
+void vector<T>::destroy_all(T* data, size_t i)
 {
     for (; i != 0; --i)
+    {
         data[i - 1].~T();
+    }
 }
 
 template <typename T>
-void copy_construct_all(T* dst, T const* src, size_t size)
+void vector<T>::copy_construct_all(T* dst, T const* src, size_t size)
 {
     size_t i = 0;
     try
     {
         for (; i != size; ++i)
+        {
             new (dst + i) T(src[i]);
+        }
     }
     catch (...)
     {
@@ -93,14 +99,12 @@ void copy_construct_all(T* dst, T const* src, size_t size)
     }
 }
 
-// Private methods
 
 template <typename T>
-size_t vector<T>::increase_capacity() const
+size_t vector<T>::get_increased_capacity() const
 {
     return capacity_ ? 2 * capacity_ : 1;
 }
-
 
 template <typename T>
 void vector<T>::new_buffer(size_t new_capacity)
@@ -110,14 +114,42 @@ void vector<T>::new_buffer(size_t new_capacity)
     try
     {
         copy_construct_all(data, data_, size_);
-        full_clear();
     }
     catch (...)
     {
         operator delete(data);
         throw;
     }
+    full_clear();
     init_fields(data, size, new_capacity);
+}
+
+template <typename T>
+void vector<T>::push_back_realloc(const T & val)
+{
+    size_t capacity = get_increased_capacity();
+    T* data = static_cast<T*>(operator new (sizeof(T) * capacity));
+    size_t size = size_;
+    try
+    {
+        copy_construct_all(data, data_, size_);
+        try
+        {
+            new (data + size_) T(val);
+        }
+        catch (...)
+        {
+            destroy_all(data, size_);
+            throw;
+        }
+    }
+    catch (...)
+    {
+        operator delete (data);
+        throw;
+    }
+    full_clear();
+    init_fields(data, size + 1, capacity);
 }
 
 template <typename T>
@@ -125,7 +157,9 @@ void vector<T>::full_clear()
 {
     clear();
     if (data_)
+    {
         operator delete (data_);
+    }
     data_ = nullptr;
     capacity_ = 0;
 }
@@ -147,7 +181,7 @@ vector<T>::vector() : data_(nullptr), size_(0), capacity_(0)
 template <typename T>
 vector<T>::vector(vector<T> const& other) : vector()
 {
-    if (other.size_)
+    if (other.size_ > 0)
     {
         T* data = static_cast<T*>(operator new (sizeof(T) * other.size_));
         try
@@ -239,7 +273,7 @@ void vector<T>::push_back(T const& val)
 {
     if (size_ == capacity_)
     {
-        insert(end(), val);
+        push_back_realloc(val);
     }
     else
     {
@@ -251,8 +285,7 @@ void vector<T>::push_back(T const& val)
 template <typename T>
 void vector<T>::pop_back()
 {
-    if (size_)
-        data_[--size_].~T();
+    data_[--size_].~T();
 }
 
 template <typename T>
@@ -271,7 +304,9 @@ template <typename T>
 void vector<T>::reserve(size_t new_capacity)
 {
     if (new_capacity > capacity_)
+    {
         new_buffer(new_capacity);
+    }
 }
 
 template <typename T>
@@ -279,10 +314,14 @@ void vector<T>::shrink_to_fit()
 {
     if (capacity_ > size_)
     {
-        if (size_)
-            new_buffer(size_);
-        else
+        if (size_ == 0)
+        {
             full_clear();
+        }
+        else
+        {
+            new_buffer(size_);
+        }
     }
 }
 
@@ -330,102 +369,64 @@ typename vector<T>::const_iterator vector<T>::end() const
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::insert(typename vector<T>::iterator pos, T const& val)
+typename vector<T>::iterator vector<T>::insert(iterator pos, T const& val)
 {
-    if (pos == end() && size_ < capacity_)
-    {
-        push_back(val);
-        return end();
-    }
-
-    ptrdiff_t shift = pos - data_;
-
-    if (size_ == capacity_)
-    {
-        size_t capacity = increase_capacity();
-        T* data = static_cast<T*>(operator new (sizeof(T) * capacity));
-        size_t size = size_;
-        try
-        {
-            copy_construct_all(data, data_, shift);
-            new (data + shift) T(val);
-            copy_construct_all(data + shift + 1, data_ + shift, size_ - shift);
-            full_clear();
-        }
-        catch (...)
-        {
-            operator delete (data);
-            throw;
-        }
-        init_fields(data, size + 1, capacity);
-        return data_ + shift;
-    }
-    else
-    {
-        iterator it = end() - 1;
-        size_t i = size_ - 1;
-        new (end()) T(*(it));
-        while (it != pos)
-        {
-            data_[i--].~T();
-            new (it) T(*(it - 1));
-            --it;
-        }
-        data_[i].~T();
-        new (it) T(val);
-        ++size_;
-        return data_ + shift;
-    }
+    return insert(static_cast<const_iterator>(pos), val);
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::insert(typename vector<T>::const_iterator pos, T const& val)
+typename vector<T>::iterator vector<T>::insert(const_iterator pos, T const& val)
 {
-    return insert(const_cast<iterator>(pos), val);
+    size_t at = pos - begin();
+    push_back(val);
+    size_t i = size_ - 1;
+    while (i != at)
+    {
+        std::swap(data_[i - 1], data_[i]);
+        --i;
+    }
+    return begin() + at;
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::erase(typename vector<T>::iterator pos)
+typename vector<T>::iterator vector<T>::erase(iterator pos)
 {
-    return erase(pos, pos + 1);
+    return erase(static_cast<const_iterator>(pos));
 }
 
 template <typename T>
 typename vector<T>::iterator vector<T>::erase(const_iterator pos)
 {
-    return erase(const_cast<iterator>(pos));
+    return erase(pos, pos + 1);
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::erase(typename vector<T>::iterator first, typename vector<T>::iterator last)
+typename vector<T>::iterator vector<T>::erase(iterator first, iterator last)
 {
-    if (last == end() && first == last - 1)
+    return erase(static_cast<const_iterator>(first), static_cast<const_iterator>(last));
+}
+
+template <typename T>
+typename vector<T>::iterator vector<T>::erase(const_iterator first, const_iterator last)
+{
+    size_t pos_end = last - begin();
+    size_t shift = first - begin();
+    size_t dist = last - first;
+    size_t pos_begin = shift;
+    while (pos_begin != pos_end)
+    {
+        size_t i = pos_begin;
+        while (i + dist < size_)
+        {
+            std::swap(data_[i], data_[i + dist]);
+            i += dist;
+        }
+        ++pos_begin;
+    }
+    while (dist > 0)
     {
         pop_back();
-        return end();
+        --dist;
     }
-
-    if (last > first && size_)
-    {
-        iterator it_end = end();
-        ptrdiff_t between = last - first, before = first - begin();
-        destroy_all(first, between);
-        size_t i = 0;
-        while (last != it_end)
-        {
-            new (first + i) T(*last);
-            data_[before + between + i].~T();
-            ++last;
-            ++i;
-        }
-        size_ -= between;
-        return begin() + before;
-    }
-    return last;
-}
-
-template <typename T>
-typename vector<T>::iterator vector<T>::erase(typename vector<T>::const_iterator first, typename vector<T>::const_iterator last)
-{
-    return erase(const_cast<iterator>(first), const_cast<iterator>(last));
+    return begin() + shift;
 }
