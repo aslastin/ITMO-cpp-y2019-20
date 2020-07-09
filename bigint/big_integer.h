@@ -8,7 +8,7 @@
 class big_integer
 {
     typedef std::vector<uint32_t>::iterator iterator;
-    typedef std::vector<u_int32_t>::const_iterator const_iterator;
+    typedef std::vector<uint32_t>::const_iterator const_iterator;
 
     std::vector<uint32_t> val_;
     bool sign_;
