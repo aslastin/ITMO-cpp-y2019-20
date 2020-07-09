@@ -36,7 +36,7 @@ class big_integer
     static uint32_t div_long_short(big_integer const& lng, uint32_t shrt, big_integer& res);
 
     static uint32_t sum_long_long(iterator it1_begin, iterator it1_end, const_iterator it2_begin, const_iterator it2_end,
-                                  void (*summator)(uint32_t&, uint32_t, uint64_t&));
+                                  void (*const summator)(uint32_t&, uint32_t, uint64_t&));
 
     static void mul_long_long(big_integer& lng1, big_integer const& lng2);
 
@@ -58,7 +58,11 @@ class big_integer
 
     static void into_two_complement(big_integer& rhs);
 
-    void apply_bit_op(big_integer const & rhs, const std::function<uint32_t(uint32_t, uint32_t)>& bit_op);
+    static uint32_t AND(uint32_t arg1, uint32_t arg2) { return arg1 & arg2; }
+    static uint32_t OR(uint32_t arg1, uint32_t arg2) { return arg1 | arg2; }
+    static uint32_t XOR(uint32_t arg1, uint32_t arg2) { return arg1 ^ arg2; }
+
+    void apply_bit_op(big_integer const & rhs, uint32_t (*const bit_op)(uint32_t, uint32_t));
 
 public:
     big_integer();
