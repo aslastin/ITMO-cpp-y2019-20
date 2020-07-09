@@ -6,8 +6,7 @@
 #include <vector>
 #include <functional>
 
-class big_integer
-{
+class big_integer {
     typedef std::vector<uint32_t>::iterator iterator;
     typedef std::vector<uint32_t>::const_iterator const_iterator;
 
@@ -16,7 +15,6 @@ class big_integer
     static uint64_t const BASE = static_cast<uint64_t>(UINT32_MAX) + 1;
 
     bool is_zero() const;
-
     // Delete useless zeros in the end of the number
     void clear_back();
 
@@ -70,7 +68,7 @@ class big_integer
 
 public:
     big_integer();
-    big_integer(big_integer const& other);
+    big_integer(big_integer const& other) = default;
     big_integer(int a);
     big_integer(int a, size_t size);
     explicit big_integer(std::string const& str);
@@ -126,4 +124,3 @@ big_integer operator<<(big_integer a, int b);
 big_integer operator>>(big_integer a, int b);
 
 std::ostream& operator<<(std::ostream& s, big_integer const& a);
-

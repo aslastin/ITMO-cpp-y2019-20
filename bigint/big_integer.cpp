@@ -17,12 +17,10 @@ bool big_integer::is_zero() const {
 }
 
 void big_integer::clear_back() {
-    while (val_.size() > 1 && val_.back() == 0) {
+    while (val_.size() > 1 && val_.back() == 0)
         val_.pop_back();
-    }
-    if (is_zero()) {
+    if (is_zero())
         sign_ = false;
-    }
 }
 
 void big_integer::summator_pos(uint32_t& val1, uint32_t val2, uint64_t& carry) {
@@ -42,35 +40,16 @@ int big_integer::cmp_no_sign(big_integer const &rhs) const {
         size_t i = val_.size();
         while (i != 0) {
             --i;
-            if (val_[i] > rhs.val_[i]) {
-                return 1;
-            }
-            if (val_[i] < rhs.val_[i]) {
-                return -1;
-            }
+            if (val_[i] > rhs.val_[i]) return 1;
+            if (val_[i] < rhs.val_[i]) return -1;
         }
         return 0;
     }
-    if (val_.size() > rhs.val_.size()) {
-        return 1;
-    } else {
-        return -1;
-    }
+    return val_.size() > rhs.val_.size() ? 1 : -1;
 }
 
 int big_integer::cmp(big_integer const& rhs) const {
-    if (sign_) {
-        if (rhs.sign_) {
-            return -cmp_no_sign(rhs);
-        }
-        return -1;
-    } else {
-        if (rhs.sign_)
-        {
-            return 1;
-        }
-        return cmp_no_sign(rhs);
-    }
+    return sign_ ? rhs.sign_ ? -cmp_no_sign(rhs) : -1 : rhs.sign_ ? 1 : cmp_no_sign(rhs);
 }
 
 void big_integer::add_long_short(big_integer& lng, uint32_t shrt) {
@@ -79,9 +58,8 @@ void big_integer::add_long_short(big_integer& lng, uint32_t shrt) {
         lng.val_[i] = acc + shrt;
         shrt = acc > UINT32_MAX - shrt;
     }
-    if (shrt > 0) {
+    if (shrt > 0)
         lng.val_.push_back(shrt);
-    }
 }
 
 uint32_t big_integer::mul_long_short(big_integer const& lng, uint32_t shrt, big_integer& res) {
@@ -105,7 +83,7 @@ uint32_t big_integer::div_long_short(big_integer& lng, uint32_t shrt) {
 }
 
 uint32_t big_integer::sum_long_long(iterator it1, iterator it1_, const_iterator it2, const_iterator it2_,
-                                    void (*const summator)(uint32_t&, uint32_t, uint64_t&)){
+                                    void (*const summator)(uint32_t&, uint32_t, uint64_t&)) {
     uint64_t acc = 0;
     for (; it1 != it1_ && it2 != it2_; ++it1, ++it2) {
         summator(*it1, *it2, acc);
@@ -117,7 +95,7 @@ uint32_t big_integer::sum_long_long(iterator it1, iterator it1_, const_iterator 
 }
 
 void big_integer::mul_long_long(big_integer& lng1, big_integer const& lng2) {
-    if (lng1.is_zero() || lng2.is_zero()) {
+    if (lng1.is_zero()|| lng2.is_zero()) {
         lng1 = big_integer();
         return;
     }
@@ -191,9 +169,7 @@ uint32_t big_integer::trial(big_integer const& lng1, big_integer const& lng2, ui
 bool big_integer::smaller(big_integer const& lng1, big_integer const& lng2, uint32_t shift) {
     size_t i = lng2.val_.size() - 1;
     while (i != 0) {
-        if (lng1.val_[i + shift] != lng2.val_[i]) {
-            break;
-        }
+        if (lng1.val_[i + shift] != lng2.val_[i]) break;
         --i;
     }
     return lng1.val_[i + shift] < lng2.val_[i];
@@ -201,9 +177,8 @@ bool big_integer::smaller(big_integer const& lng1, big_integer const& lng2, uint
 
 void big_integer::into_two_complement() {
     if (sign_) {
-        for (auto& el : val_) {
+        for (auto& el : val_)
             el = ~el;
-        }
         add_long_short(*this, 1);
         clear_back();
     }
@@ -213,22 +188,20 @@ void big_integer::apply_bit_op(big_integer const & rhs, std::function<uint32_t(u
     into_two_complement();
     big_integer cp = rhs;
     cp.into_two_complement();
-    size_t end = std::min(val_.size(), rhs.val_.size());
+    size_t min = std::min(val_.size(), rhs.val_.size());
+    size_t max = std::max(val_.size(), rhs.val_.size());
+    size_t s1 = val_.size();
+    size_t s2 = cp.val_.size();
 
-    for (size_t i = 0; i != end; ++i) {
+    for (size_t i = 0; i != min; ++i) {
         val_[i] = bit_op(val_[i], cp.val_[i]);
     }
-    if (val_.size() < cp.val_.size()) {
-        uint32_t bit = sign_ ? UINT32_MAX : 0;
-        for (size_t i = end; i != cp.val_.size(); ++i) {
+    uint32_t bit = (s1 < s2 && sign_) || (s1 > s2 && cp.sign_) ? UINT32_MAX : 0;
+    for (size_t i = min; i != max; ++i) {
+        if (s1 < s2)
             val_.push_back(bit_op(cp.val_[i], bit));
-        }
-    }
-    if (val_.size() > cp.val_.size()) {
-        uint32_t bit = cp.sign_ ? UINT32_MAX : 0;
-        for (size_t i = end; i != val_.size(); ++i) {
+        else
             val_[i]  = bit_op(val_[i], bit);
-        }
     }
     if (bit_op(sign_, cp.sign_) == 1) {
         sign_ = true;
@@ -246,22 +219,15 @@ big_integer::big_integer()
         : val_(1, 0), sign_(false)
 {}
 
-big_integer::big_integer(big_integer const& other) {
-    val_ = other.val_;
-    sign_ = other.sign_;
+big_integer::big_integer(int a) : big_integer() {
+    sign_ = a < 0;
+    auto val = static_cast<int64_t>(a);
+    if (val < 0) val = -val;
+    val_[0] = static_cast<uint32_t>(val);
 }
 
 big_integer::big_integer(int a, size_t size) : big_integer(a) {
     val_.resize(size);
-}
-
-big_integer::big_integer(int a) : big_integer() {
-    sign_ = a < 0;
-    auto val = static_cast<int64_t>(a);
-    if (val < 0) {
-        val = -val;
-    }
-    val_[0] = static_cast<uint32_t>(val);
 }
 
 big_integer::big_integer(std::string const& str) : big_integer() {
@@ -273,14 +239,12 @@ big_integer::big_integer(std::string const& str) : big_integer() {
             throw std::runtime_error(message);
         }
         uint32_t remainder = mul_long_short(*this, 10, *this);
-        if (remainder > 0) {
+        if (remainder > 0)
             val_.push_back(remainder);
-        }
         add_long_short(*this, str[i] - 48);
     }
-    if (str.front() == '-' && !is_zero()) {
+    if (str.front() == '-' && !is_zero())
         sign_ = true;
-    }
 }
 
 void big_integer::swap(big_integer& num) {
@@ -308,9 +272,8 @@ big_integer& big_integer::operator+=(big_integer const& rhs) {
                                   sign_ == rhs.sign_ ? summator_pos : summator_neg);
         num.swap(*this);
     }
-    if (remainder > 0) {
+    if (remainder > 0)
         val_.push_back(remainder);
-    }
     clear_back();
     return *this;
 }
@@ -327,9 +290,8 @@ big_integer& big_integer::operator-=(big_integer const& rhs) {
         num.swap(*this);
         sign_ = !sign_;
     }
-    if (remainder > 0) {
+    if (remainder > 0)
         val_.push_back(remainder);
-    }
     clear_back();
     return *this;
 }
@@ -367,9 +329,8 @@ big_integer& big_integer::operator%=(big_integer const& rhs) {
         sign_ = is_zero() ? false : sign_;
         return *this;
     }
-    if (val_.size() < rhs.val_.size()) {
+    if (val_.size() < rhs.val_.size())
         return *this;
-    }
     auto p = div_long_long(*this, rhs);
     val_.swap(p.second.val_);
     return *this;
@@ -437,12 +398,10 @@ big_integer& big_integer::operator>>=(int rhs) {
             ++pos2;
         }
         val_[pos1] = val_[pos2] >> shift;
-        while (pos1 != val_.size() - 1) {
+        while (pos1 != val_.size() - 1)
             val_[++pos1] = 0;
-        }
-        if (sign_) {
+        if (sign_)
             add_long_short(*this, 1);
-        }
         clear_back();
     }
     return *this;
@@ -461,9 +420,7 @@ big_integer big_integer::operator-() const {
 big_integer big_integer::operator~() const {
     big_integer r = big_integer(*this);
     r.into_two_complement();
-    for (auto& el : r.val_) {
-        el = ~el;
-    }
+    for (auto& el : r.val_) el = ~el;
     r.sign_ = !r.sign_;
     r.into_two_complement();
     return r;
@@ -559,9 +516,8 @@ bool operator>=(big_integer const& a, big_integer const& b)
 }
 
 std::string to_string(big_integer const& a) {
-    if (a.is_zero()) {
+    if (a.is_zero())
         return "0";
-    }
     std::list<char> l;
     big_integer tmp = a;
     while (!tmp.is_zero()) {
@@ -569,9 +525,8 @@ std::string to_string(big_integer const& a) {
         tmp.clear_back();
         l.push_front(static_cast<char>(reminder + 48));
     }
-    if (a.sign_) {
+    if (a.sign_)
         l.push_front('-');
-    }
     return std::string(l.begin(), l.end());
 }
 
