@@ -400,7 +400,7 @@ big_integer& big_integer::operator<<=(int rhs) {
     if (!is_zero()) {
         size_t pos1 = val_.size();
         val_.push_back(0);
-        for (size_t i = 0; i < rhs / 32; ++i) {
+        for (size_t i = 0; i < static_cast<uint32_t>(rhs) / 32; ++i) {
             val_.push_back(0);
         }
         uint32_t shift = rhs % 32;
@@ -425,7 +425,7 @@ big_integer& big_integer::operator>>=(int rhs) {
     if (!is_zero()) {
         size_t pos1 = 0;
         uint32_t shift = rhs % 32;
-        size_t pos2 = rhs / 32;
+        size_t pos2 = static_cast<uint32_t>(rhs) / 32;
         while (pos2 != val_.size() - 1) {
             uint32_t MASK2 = val_[pos2 + 1] << (32 - shift);
             uint32_t MASK1 = val_[pos2] >> shift;
