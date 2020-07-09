@@ -4,6 +4,7 @@
 #include <iosfwd>
 #include <cstdint>
 #include <vector>
+#include <functional>
 
 class big_integer
 {
@@ -14,60 +15,64 @@ class big_integer
     bool sign_;
     static uint64_t const BASE = static_cast<uint64_t>(UINT32_MAX) + 1;
 
-    // Helpful Methods
-
     bool is_zero() const;
-    static void clear_back(big_integer& num);
 
+    // Delete useless zeros in the end of the number
+    void clear_back();
+
+    // Functions given to sum_long_long :
+
+    // val1' = val1 + val2 + carry
     static void summator_pos(uint32_t& val1, uint32_t val2, uint64_t& carry);
+    // val1' = val1 - val2 - carry
     static void summator_neg(uint32_t& val1, uint32_t val2, uint64_t& borrow);
 
-    // Methods for compare :
+    // Compare :
 
     int cmp_no_sign(big_integer const& rhs) const;
     int cmp(big_integer const& rhs) const;
 
-    // Methods for arithmetic operations :
+    // Arithmetic operations (don't pay attention to the sign of the arguments):
 
+    // lng' = lng + shrt
     static void add_long_short(big_integer& lng, uint32_t shrt);
 
+    // res = lng * shrt
     static uint32_t mul_long_short(big_integer const& lng, uint32_t shrt, big_integer& res);
 
-    static uint32_t div_long_short(big_integer const& lng, uint32_t shrt, big_integer& res);
+    // lng' = lng / shrt
+    static uint32_t div_long_short(big_integer& lng, uint32_t shrt);
 
-    static uint32_t sum_long_long(iterator it1_begin, iterator it1_end, const_iterator it2_begin, const_iterator it2_end,
+    // Apply the summator to the two transmitted sequences.
+    // Precondition : it1_ - it1 >= it_2 - it2
+    static uint32_t sum_long_long(iterator it1, iterator it1_, const_iterator it2, const_iterator it2_,
                                   void (*const summator)(uint32_t&, uint32_t, uint64_t&));
 
+    // lng1' = lng1 * lng2
     static void mul_long_long(big_integer& lng1, big_integer const& lng2);
 
     // Methods for long division
 
+    // lng1' = lng1 / lng2
+    // Precondition : lng1 >= lng2
     static std::pair<big_integer, big_integer> div_long_long(big_integer& lng1, big_integer const& lng2);
 
     static uint32_t trial(big_integer const& lng1, big_integer const& lng2, uint32_t shift);
 
     static bool smaller(big_integer const& lng1, big_integer const& lng2, uint32_t shift);
 
-    static void difference(big_integer& lng1, big_integer const& lng2, uint32_t shift);
-
-
-
-
-
     // Methods for bit operations :
 
-    static void into_two_complement(big_integer& rhs);
+    void into_two_complement();
 
-    static uint32_t AND(uint32_t arg1, uint32_t arg2) { return arg1 & arg2; }
-    static uint32_t OR(uint32_t arg1, uint32_t arg2) { return arg1 | arg2; }
-    static uint32_t XOR(uint32_t arg1, uint32_t arg2) { return arg1 ^ arg2; }
-
-    void apply_bit_op(big_integer const & rhs, uint32_t (*const bit_op)(uint32_t, uint32_t));
+    // (*this)' = bit_op(*this, rhs)
+    void apply_bit_op(big_integer const & rhs, std::function<uint32_t(uint32_t, uint32_t)> const& bit_op);
 
 public:
     big_integer();
     big_integer(big_integer const& other);
     big_integer(int a);
+    big_integer(int a, size_t size);
     explicit big_integer(std::string const& str);
 
     void swap(big_integer& num);
