@@ -103,7 +103,7 @@ uint32_t big_integer::div_long_short(big_integer const& lng, uint32_t shrt, big_
 }
 
 uint32_t big_integer::sum_long_long(iterator it1, iterator it1_, const_iterator it2, const_iterator it2_,
-                                    void (*summator)(uint32_t&, uint32_t, uint64_t&)){
+                                    void (*const summator)(uint32_t&, uint32_t, uint64_t&)){
     uint64_t acc = 0;
     for (; it1 != it1_ && it2 != it2_; ++it1, ++it2) {
         summator(*it1, *it2, acc);
@@ -218,7 +218,8 @@ void big_integer::into_two_complement(big_integer & num) {
     }
 }
 
-void big_integer::apply_bit_op(big_integer const & rhs, const std::function<uint32_t(uint32_t, uint32_t)>& bit_op) {
+
+void big_integer::apply_bit_op(big_integer const & rhs, uint32_t (*const bit_op)(uint32_t, uint32_t)) {
     into_two_complement(*this);
     big_integer cp = rhs;
     into_two_complement(cp);
@@ -381,26 +382,17 @@ big_integer& big_integer::operator%=(big_integer const& rhs) {
 }
 
 big_integer& big_integer::operator&=(big_integer const& rhs) {
-    apply_bit_op(rhs,
-                 [](uint32_t arg1, uint32_t arg2) {
-                     return arg1 & arg2;
-                 });
+    apply_bit_op(rhs, AND);
     return *this;
 }
 
 big_integer& big_integer::operator|=(big_integer const& rhs) {
-    apply_bit_op(rhs,
-                 [](uint32_t arg1, uint32_t arg2) {
-                     return arg1 | arg2;
-                 });
+    apply_bit_op(rhs, OR);
     return *this;
 }
 
 big_integer& big_integer::operator^=(big_integer const& rhs) {
-    apply_bit_op(rhs,
-                 [](uint32_t arg1, uint32_t arg2) {
-                     return arg1 ^ arg2;
-                 });
+    apply_bit_op(rhs, XOR);
     return *this;
 }
 
