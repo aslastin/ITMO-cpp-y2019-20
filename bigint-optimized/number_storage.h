@@ -43,7 +43,7 @@ private:
     static size_t const MAX_STATIC_SIZE = (sizeof(container) + sizeof(size_t)) / sizeof(number_type);
     union {
         number_type static_data_[MAX_STATIC_SIZE];
-        type_dd* dynamic_data_;
+        type_dd* dynamic_data_ = nullptr;
     };
     uint8_t static_data_size_;
 
