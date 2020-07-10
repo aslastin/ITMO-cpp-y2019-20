@@ -9,7 +9,6 @@
 #include <functional>
 #include <vector>
 
-
 // Private Methods
 
 bool big_integer::is_zero() const {

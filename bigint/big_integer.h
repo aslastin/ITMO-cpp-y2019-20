@@ -124,3 +124,4 @@ big_integer operator<<(big_integer a, int b);
 big_integer operator>>(big_integer a, int b);
 
 std::ostream& operator<<(std::ostream& s, big_integer const& a);
+
