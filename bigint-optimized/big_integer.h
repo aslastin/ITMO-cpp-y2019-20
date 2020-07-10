@@ -1,17 +1,80 @@
-#ifndef BIG_INTEGER_H
-#define BIG_INTEGER_H
+#pragma once
 
 #include <cstddef>
-#include <gmp.h>
 #include <iosfwd>
+#include <cstdint>
+#include <vector>
+#include <functional>
+#include "number_storage.h"
 
-struct big_integer
-{
+class big_integer {
+    typedef number_storage::iterator iterator;
+    typedef number_storage::const_iterator const_iterator;
+
+    number_storage val_;
+    bool sign_;
+    static uint64_t const BASE = static_cast<uint64_t>(UINT32_MAX) + 1;
+
+    bool is_zero() const;
+    // Delete useless zeros in the end of the number
+    void clear_back();
+
+    // Functions given to sum_long_long :
+
+    // val1' = val1 + val2 + carry
+    static void summator_pos(uint32_t& val1, uint32_t val2, uint64_t& carry);
+    // val1' = val1 - val2 - carry
+    static void summator_neg(uint32_t& val1, uint32_t val2, uint64_t& borrow);
+
+    // Compare :
+
+    int cmp_no_sign(big_integer const& rhs) const;
+    int cmp(big_integer const& rhs) const;
+
+    // Arithmetic operations (don't pay attention to the sign of the arguments):
+
+    // lng' = lng + shrt
+    static void add_long_short(big_integer& lng, uint32_t shrt);
+
+    // res = lng * shrt
+    static uint32_t mul_long_short(big_integer const& lng, uint32_t shrt, big_integer& res);
+
+    // lng' = lng / shrt
+    static uint32_t div_long_short(big_integer& lng, uint32_t shrt);
+
+    // Apply the summator to the two transmitted sequences.
+    // Precondition : it1_ - it1 >= it_2 - it2
+    static uint32_t sum_long_long(iterator it1, iterator it1_, const_iterator it2, const_iterator it2_,
+                                  void (*const summator)(uint32_t&, uint32_t, uint64_t&));
+
+    // lng1' = lng1 * lng2
+    static void mul_long_long(big_integer& lng1, big_integer const& lng2);
+
+    // Methods for long division
+
+    // lng1' = lng1 / lng2
+    // Precondition : lng1 >= lng2
+    static std::pair<big_integer, big_integer> div_long_long(big_integer& lng1, big_integer const& lng2);
+
+    static uint32_t trial(big_integer const& lng1, big_integer const& lng2, uint32_t shift);
+
+    static bool smaller(big_integer const& lng1, big_integer const& lng2, uint32_t shift);
+
+    // Methods for bit operations :
+
+    void into_two_complement();
+
+    // (*this)' = bit_op(*this, rhs)
+    void apply_bit_op(big_integer const & rhs, std::function<uint32_t(uint32_t, uint32_t)> const& bit_op);
+
+public:
     big_integer();
-    big_integer(big_integer const& other);
+    big_integer(big_integer const& other) = default;
     big_integer(int a);
+    big_integer(int a, size_t size);
     explicit big_integer(std::string const& str);
-    ~big_integer();
+
+    void swap(big_integer& num);
 
     big_integer& operator=(big_integer const& other);
 
@@ -46,9 +109,6 @@ struct big_integer
     friend bool operator>=(big_integer const& a, big_integer const& b);
 
     friend std::string to_string(big_integer const& a);
-
-private:
-    mpz_t mpz;
 };
 
 big_integer operator+(big_integer a, big_integer const& b);
@@ -64,14 +124,6 @@ big_integer operator^(big_integer a, big_integer const& b);
 big_integer operator<<(big_integer a, int b);
 big_integer operator>>(big_integer a, int b);
 
-bool operator==(big_integer const& a, big_integer const& b);
-bool operator!=(big_integer const& a, big_integer const& b);
-bool operator<(big_integer const& a, big_integer const& b);
-bool operator>(big_integer const& a, big_integer const& b);
-bool operator<=(big_integer const& a, big_integer const& b);
-bool operator>=(big_integer const& a, big_integer const& b);
-
-std::string to_string(big_integer const& a);
 std::ostream& operator<<(std::ostream& s, big_integer const& a);
 
-#endif // BIG_INTEGER_H
+
