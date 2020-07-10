@@ -13,13 +13,7 @@ void number_storage::init_dynamic(const_iterator it, const_iterator it_) {
     for (auto iter = it; iter != it_; ++iter) {
         tmp[i++] = *iter;
     }
-    if (static_data_size_ == 255) {
-        if (dynamic_data_->second == 1) {
-            delete dynamic_data_;
-        } else {
-            --dynamic_data_->second;
-        }
-    }
+
     dynamic_data_ = new type_dd(container(tmp), 1);
     static_data_size_ = 255;
 }
@@ -27,6 +21,16 @@ void number_storage::init_dynamic(const_iterator it, const_iterator it_) {
 void number_storage::into_dynamic() {
     if (static_data_size_ != 255) {
         init_dynamic(begin(), end());
+    }
+}
+
+void number_storage::clr() {
+    if (static_data_size_ == 255) {
+        if (dynamic_data_->second == 1) {
+            delete dynamic_data_;
+        } else {
+            --dynamic_data_->second;
+        }
     }
 }
 
@@ -73,13 +77,7 @@ number_storage& number_storage::operator=(number_storage const& other) {
 }
 
 number_storage::~number_storage() {
-    if (static_data_size_ == 255) {
-        if (dynamic_data_->second == 1) {
-            delete dynamic_data_;
-        } else {
-            --dynamic_data_->second;
-        }
-    }
+    clr();
 }
 
 typename number_storage::number_type& number_storage::operator[](size_t i) {

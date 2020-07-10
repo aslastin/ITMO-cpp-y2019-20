@@ -49,4 +49,5 @@ private:
 
     void init_dynamic(const_iterator it, const_iterator it_);
     void into_dynamic();
+    void clr();
 };
