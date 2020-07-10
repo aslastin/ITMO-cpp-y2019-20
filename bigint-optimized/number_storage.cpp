@@ -123,12 +123,14 @@ size_t number_storage::size() const {
 }
 
 void number_storage::resize(size_t size) {
-    if (size <= MAX_STATIC_SIZE && static_data_size_ != FLAG) {
-        static_data_size_ = size;
-    } else {
-        if (static_data_size_ != FLAG || size > dynamic_data_->first.size()) {
+    if (static_data_size_ != FLAG) {
+        if (size <= MAX_STATIC_SIZE) {
+            static_data_size_ = size;
+            for (size_t i = size; i != MAX_STATIC_SIZE; ++i) {
+                static_data_[i] = 0;
+            }
+        } else {
             into_dynamic();
-            separate();
             dynamic_data_->first.resize(size);
         }
     }
@@ -173,23 +175,21 @@ void number_storage::swap(number_storage& other) {
         if (other.static_data_size_ == FLAG) {
             std::swap(dynamic_data_, other.dynamic_data_);
         } else {
-            container tmp(other.begin(), other.end());
-            other.dynamic_data_ = dynamic_data_;
-            std::copy(tmp.data(), tmp.data() + tmp.size(), static_data_);
-            for (size_t i = tmp.size(); i < MAX_STATIC_SIZE; ++i) {
-                static_data_[i] = 0;
+            type_dd *p = dynamic_data_;
+            for (size_t i = 0; i != MAX_STATIC_SIZE; ++i) {
+                static_data_[i] = other.static_data_[i];
             }
+            other.dynamic_data_ = p;
             static_data_size_ = other.static_data_size_;
             other.static_data_size_ = FLAG;
         }
     } else {
         if (other.static_data_size_ == FLAG) {
-            container tmp(begin(), end());
-            dynamic_data_ = other.dynamic_data_;
-            std::copy(tmp.data(), tmp.data() + tmp.size(), other.static_data_);
-            for (size_t i = tmp.size(); i < MAX_STATIC_SIZE; ++i) {
-                other.static_data_[i] = 0;
+            type_dd *p = other.dynamic_data_;
+            for (size_t i = 0; i != MAX_STATIC_SIZE; ++i) {
+                other.static_data_[i] = static_data_[i];
             }
+            dynamic_data_ = p;
             other.static_data_size_ = static_data_size_;
             static_data_size_ = FLAG;
         } else {
