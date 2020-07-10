@@ -83,10 +83,14 @@ number_storage::~number_storage() {
 }
 
 typename number_storage::number_type& number_storage::operator[](size_t i) {
-    if (static_data_size_ == 255 && dynamic_data_->second != 1) {
-        init_dynamic(begin(), end());
+    if (static_data_size_ == 255) {
+        if (dynamic_data_->second != 1) {
+            init_dynamic(begin(), end());
+        }
+        return dynamic_data_->first[i];
+    } else {
+        return static_data_[i];
     }
-    return static_data_size_ == 255 ?  dynamic_data_->first[i] : static_data_[i];
 }
 
 typename number_storage::number_type const& number_storage::operator[](size_t i) const {
@@ -94,17 +98,27 @@ typename number_storage::number_type const& number_storage::operator[](size_t i)
 }
 
 typename number_storage::iterator number_storage::begin() {
-    if (static_data_size_ == 255 && dynamic_data_->second != 1) {
-        init_dynamic(&(*dynamic_data_->first.begin()), &(*dynamic_data_->first.end()));
+    if (static_data_size_ == 255) {
+        number_type *p = &(*dynamic_data_->first.begin());
+        if (dynamic_data_->second != 1) {
+            init_dynamic(p, p + dynamic_data_->first.size());
+        }
+        return &(*dynamic_data_->first.begin());
+    } else {
+        return static_data_;
     }
-    return static_data_size_ == 255 ? &(*dynamic_data_->first.begin()) : static_data_;
 }
 
 typename number_storage::iterator number_storage::end() {
-    if (static_data_size_ == 255 && dynamic_data_->second != 1) {
-        init_dynamic(&(*dynamic_data_->first.begin()), &(*dynamic_data_->first.end()));
+    if (static_data_size_ == 255) {
+        number_type *p = &(*dynamic_data_->first.begin());
+        if (dynamic_data_->second != 1) {
+            init_dynamic(p, p + dynamic_data_->first.size());
+        }
+        return &(*dynamic_data_->first.begin()) + dynamic_data_->first.size();
+    } else {
+        return static_data_ + static_data_size_;
     }
-    return static_data_size_ == 255 ? &(*dynamic_data_->first.end()) : static_data_ + static_data_size_;
 }
 
 typename number_storage::const_iterator number_storage::begin() const {
@@ -112,7 +126,7 @@ typename number_storage::const_iterator number_storage::begin() const {
 }
 
 typename number_storage::const_iterator number_storage::end() const {
-    return static_data_size_ == 255 ? &(*dynamic_data_->first.end()) : static_data_ + static_data_size_;
+    return static_data_size_ == 255 ?  &(*dynamic_data_->first.begin()) + dynamic_data_->first.size() : static_data_ + static_data_size_;
 }
 
 size_t number_storage::size() const {
