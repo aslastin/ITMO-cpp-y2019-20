@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <functional>
+
 #include "number_storage.h"
 
 class big_integer {
