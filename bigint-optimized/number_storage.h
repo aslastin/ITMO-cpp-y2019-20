@@ -4,13 +4,10 @@
 #include <cstdint>
 #include <utility>
 
-
 struct number_storage {
-    typedef uint32_t number_type;
-    typedef number_type* iterator;
-    typedef number_type const* const_iterator;
-    typedef std::vector<number_type> container;
-    typedef std::pair<container, size_t> type_dd;
+    using number_type = uint32_t;
+    using iterator = number_type *;
+    using const_iterator = number_type const*;
 
     number_storage();
     number_storage(size_t size);
@@ -39,15 +36,19 @@ struct number_storage {
     bool empty() const;
     void swap(number_storage&);
 
-private:
-    static size_t const MAX_STATIC_SIZE = (sizeof(container) + sizeof(size_t)) / sizeof(number_type);
+ private:
+    using container = std::vector<number_type>;
+    using type_dd = std::pair<container, size_t>;
+
+    static constexpr size_t MAX_STATIC_SIZE = (sizeof(type_dd)) / sizeof(number_type);
+    static constexpr uint8_t FLAG = 255;
     union {
         number_type static_data_[MAX_STATIC_SIZE];
-        type_dd* dynamic_data_ = nullptr;
+        type_dd* dynamic_data_;
     };
     uint8_t static_data_size_;
-
-    void init_dynamic(const_iterator it, const_iterator it_);
+    void init_dynamic();
+    void separate();
     void into_dynamic();
     void clr();
 };
