@@ -37,7 +37,6 @@ struct number_storage {
     void pop_back();
 
     bool empty() const;
-    void clear();
     void swap(number_storage&);
 
 private:

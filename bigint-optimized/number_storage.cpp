@@ -43,8 +43,11 @@ number_storage::number_storage(size_t size) : number_storage() {
 
 number_storage::number_storage(number_storage const& other) {
     if (other.size() <= MAX_STATIC_SIZE) {
-        for (size_t i = 0; i != MAX_STATIC_SIZE; ++i) {
+        for (size_t i = 0; i != other.size(); ++i) {
             static_data_[i] = other[i];
+        }
+        for (size_t i = other.size(); i != MAX_STATIC_SIZE; ++i) {
+            static_data_[i] = 0;
         }
         static_data_size_ = other.size();
     } else {
@@ -157,20 +160,6 @@ void number_storage::pop_back() {
 
 bool number_storage::empty() const {
     return static_data_size_ == 255 ? dynamic_data_->first.empty() : static_data_size_ == 0;
-}
-
-void number_storage::clear() {
-    if (static_data_size_ == 255) {
-        if (dynamic_data_->second == 1) {
-            delete dynamic_data_;
-        } else {
-            --dynamic_data_->second;
-        }
-    }
-    for (size_t i = 0; i != MAX_STATIC_SIZE; ++i) {
-        static_data_[i] = 0;
-    }
-    static_data_size_ = 0;
 }
 
 void number_storage::swap(number_storage& other) {

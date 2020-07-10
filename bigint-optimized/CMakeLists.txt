@@ -23,3 +23,4 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 target_link_libraries(big_integer_testing -lgmp -lpthread)
+#target_link_libraries(big_integer_testing "/usr/local/Cellar/gmp/6.2.0/lib/libgmp.a" -lpthread)
