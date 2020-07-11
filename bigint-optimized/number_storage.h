@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <utility>
+#include <cstddef>
 
 constexpr uint8_t SHIFT = sizeof(size_t) * 8 - 1;
 
