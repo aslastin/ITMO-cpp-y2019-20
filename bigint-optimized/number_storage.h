@@ -4,28 +4,25 @@
 #include <utility>
 #include <cstddef>
 
-constexpr uint8_t SHIFT = sizeof(size_t) * 8 - 1;
 
-struct flexible_buffer {
-    size_t ref_counter;
-    uint32_t data[];
+struct special_size {
+    constexpr static uint8_t SIZE_BITS = sizeof(size_t) * 8 - 1;
+    size_t size : SIZE_BITS;
+    bool is_big : 1;
+    special_size(size_t size, bool is_big) : size(size), is_big(is_big)
+    {}
+    special_size() : special_size(0, false)
+    {}
 };
 
 // Специально уменьшаю capacity до 63 бит, чтобы сохранялся инвариант: capacity >= size.
 
 struct flexible_data {
-    size_t capacity : SHIFT;
-    flexible_buffer* pb;
+    size_t capacity : special_size::SIZE_BITS;
+    size_t ref_counter;
+    uint32_t data[];
 };
 
-struct special_size {
-    size_t size : SHIFT;
-    size_t is_big : 1;
-    special_size(size_t size, size_t is_big) : size(size), is_big(is_big)
-    {}
-    special_size() : special_size(0, 0)
-    {}
-};
 
 struct number_storage {
     using number_t = uint32_t;
@@ -63,20 +60,19 @@ struct number_storage {
     void swap(number_storage&);
 
  private:
-    constexpr static size_t MAX_STATIC_SIZE = sizeof(flexible_data) / sizeof(number_t);
-    constexpr static size_t INCREASE_CAPACITY = 2;
+    constexpr static uint8_t MAX_STATIC_SIZE = sizeof(flexible_data*) / sizeof(number_t);
+    constexpr static uint8_t INCREASE_CAPACITY = 2;
 
-    // Выделил size и is_big специально в отдельный класс по причине проблем при копировании bitfields.
-    // (в интернете более элегантного способа не нашел)
     special_size sz;
     union {
         number_t static_data[MAX_STATIC_SIZE];
-        flexible_data dynamic_data;
+        flexible_data* dynamic_data;
     };
 
-    void init_dynamic(size_t size);
+    void init_unique_dynamic(size_t size);
     void separate();
     void clr();
 };
+
 
 
