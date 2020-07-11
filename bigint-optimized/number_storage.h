@@ -1,25 +1,26 @@
 #pragma once
 
-#include <vector>
 #include <cstdint>
 #include <utility>
 
 constexpr uint8_t SHIFT = sizeof(size_t) * 8 - 1;
 
-struct buffer {
-    size_t ref_counter_;
-    uint32_t data_[];
+struct flexible_buffer {
+    size_t ref_counter;
+    uint32_t data[];
 };
 
+// Специально уменьшаю capacity до 63 бит, чтобы сохранялся инвариант: capacity >= size.
+
 struct flexible_data {
-    size_t capacity_ : SHIFT;
-    buffer* pb;
+    size_t capacity : SHIFT;
+    flexible_buffer* pb;
 };
 
 struct special_size {
-    size_t size_ : SHIFT;
-    size_t is_big_ : 1;
-    special_size(size_t size, size_t is_big) : size_(size), is_big_(is_big)
+    size_t size : SHIFT;
+    size_t is_big : 1;
+    special_size(size_t size, size_t is_big) : size(size), is_big(is_big)
     {}
     special_size() : special_size(0, 0)
     {}
@@ -32,8 +33,7 @@ struct number_storage {
     using const_iterator = number_t const*;
 
     number_storage() = default;
-    number_storage(size_t size, number_t val);
-    explicit number_storage(size_t size);
+    explicit number_storage(size_t size, number_t val = 0);
     number_storage(number_storage const& other);
     number_storage& operator=(number_storage const& other);
 
@@ -50,8 +50,8 @@ struct number_storage {
 
     size_t size() const;
 
-    void resize(size_t size, number_t val);
-    void resize(size_t size);
+    // Если size' > size : i = size ... size' - 1 : elements[i] = val
+    void resize(size_t size, number_t val = 0);
 
     number_t& back();
     number_t const& back() const;
@@ -63,15 +63,19 @@ struct number_storage {
 
  private:
     constexpr static size_t MAX_STATIC_SIZE = sizeof(flexible_data) / sizeof(number_t);
-    special_size sz_;
+    constexpr static size_t INCREASE_CAPACITY = 2;
+
+    // Выделил size и is_big специально в отдельный класс по причине проблем при копировании bitfields.
+    // (в интернете более элегантного способа не нашел)
+    special_size sz;
     union {
-        number_t static_data_[MAX_STATIC_SIZE];
-        flexible_data dynamic_data_;
+        number_t static_data[MAX_STATIC_SIZE];
+        flexible_data dynamic_data;
     };
 
     void init_dynamic(size_t size);
-    void init_dynamic();
     void separate();
     void clr();
 };
+
 

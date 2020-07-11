@@ -20,7 +20,7 @@ void big_integer::clear_back() {
         val_.pop_back();
     }
     if (is_zero()) {
-        val_.pop_back();
+        sign_ = false;
     }
 }
 
@@ -162,11 +162,11 @@ big_integer::number_t big_integer::trial(big_integer const& lng1, big_integer co
     __uint128_t d2 = (d1 << 32) + d0;
 
     r3 /= d2;
-    __uint128_t val = UINT32_MAX;
+    __uint128_t val = NUMBER_MAX;
     if (r3 >= val) {
-        return UINT32_MAX;
+        return NUMBER_MAX;
     }
-    return static_cast<uint32_t>(r3);
+    return static_cast<number_t>(r3);
 }
 
 bool big_integer::smaller(big_integer const& lng1, big_integer const& lng2, number_t shift) {
@@ -228,7 +228,7 @@ big_integer::big_integer() : val_(1), sign_(false)
 big_integer::big_integer(int a) {
     val_ = number_storage(1);
     sign_ = a < 0;
-    auto val = static_cast<big_number_t>(a);
+    auto val = static_cast<int64_t>(a);
     if (val < 0) {
         val = -val;
     }

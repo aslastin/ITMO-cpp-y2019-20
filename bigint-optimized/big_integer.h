@@ -13,7 +13,7 @@ class big_integer {
     using number_t = number_storage::number_t;
     using big_number_t = number_storage::big_number_t;
 
-    constexpr static big_number_t NUMBER_MAX = UINT32_MAX;
+    constexpr static number_t NUMBER_MAX = UINT32_MAX;
     constexpr static big_number_t BASE = static_cast<big_number_t>(NUMBER_MAX) + 1;
 
     number_storage val_;

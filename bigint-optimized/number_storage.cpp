@@ -1,81 +1,69 @@
 #include "number_storage.h"
 
-
-#include <cstdint>
-#include <vector>
 #include <memory>
 #include <algorithm>
 
 
+// Helpful functions
 
-// Helpful methods
-
-static buffer* allocate_buffer(size_t size) {
-    auto buf = reinterpret_cast<buffer*>(operator new (sizeof(buffer) + sizeof(number_storage::number_t) * size));
-    buf->ref_counter_ = 1;
+static flexible_buffer* allocate_buffer(size_t size) {
+    auto buf = reinterpret_cast<flexible_buffer*>(operator new (sizeof(flexible_buffer) + sizeof(number_storage::number_t) * size));
+    buf->ref_counter = 1;
     return buf;
 }
 
 // Private methods
 
 void number_storage::init_dynamic(size_t capacity) {
-    buffer* buf = allocate_buffer(capacity);
-    if (sz_.is_big_ == 1) {
-        std::copy(dynamic_data_.pb->data_, dynamic_data_.pb->data_ + sz_.size_, buf->data_);
+    flexible_buffer* buf = allocate_buffer(capacity);
+    if (sz.is_big == 1) {
+        std::copy(dynamic_data.pb->data, dynamic_data.pb->data + sz.size, buf->data);
     } else {
-        std::copy(static_data_, static_data_ + sz_.size_, buf->data_);
+        std::copy(static_data, static_data + sz.size, buf->data);
     }
     clr();
-    sz_.is_big_ = 1;
-    dynamic_data_.pb = buf;
-    dynamic_data_.capacity_ = capacity;
-}
-
-void number_storage::init_dynamic() {
-    init_dynamic(sz_.size_);
+    sz.is_big = 1;
+    dynamic_data.pb = buf;
+    dynamic_data.capacity = capacity;
 }
 
 void number_storage::separate() {
-    if (sz_.is_big_ == 1 && dynamic_data_.pb->ref_counter_ > 1) {
-        init_dynamic(dynamic_data_.capacity_);
+    if (sz.is_big == 1 && dynamic_data.pb->ref_counter > 1) {
+        init_dynamic(dynamic_data.capacity);
     }
 }
 
 void number_storage::clr() {
-    if (sz_.is_big_ == 1) {
-        --dynamic_data_.pb->ref_counter_;
-        if (dynamic_data_.pb->ref_counter_ == 0) {
-            delete dynamic_data_.pb;
+    if (sz.is_big == 1) {
+        --dynamic_data.pb->ref_counter;
+        if (dynamic_data.pb->ref_counter == 0) {
+            delete dynamic_data.pb;
         }
     }
 }
 
 // Public methods
 
-
-number_storage::number_storage(size_t size, number_t val) : sz_(size, 0) {
+number_storage::number_storage(size_t size, number_t val) : sz(size, 0) {
     if (size <= MAX_STATIC_SIZE) {
-        std::fill(static_data_, static_data_ + sz_.size_, val);
+        std::fill(static_data, static_data + sz.size, val);
     } else {
-        sz_.is_big_ = 1;
-        dynamic_data_.capacity_ = size;
-        dynamic_data_.pb = allocate_buffer(size);
-        std::fill(dynamic_data_.pb->data_, dynamic_data_.pb->data_ + sz_.size_, val);
+        sz.is_big = 1;
+        dynamic_data.capacity = size;
+        dynamic_data.pb = allocate_buffer(size);
+        std::fill(dynamic_data.pb->data, dynamic_data.pb->data + sz.size, val);
     }
 }
 
-number_storage::number_storage(size_t size) : number_storage(size, 0)
-{}
-
-number_storage::number_storage(number_storage const& other) : sz_(other.sz_) {
+number_storage::number_storage(number_storage const& other) : sz(other.sz) {
     if (other.size() <= MAX_STATIC_SIZE) {
-        sz_.is_big_ = 0;
-        std::copy(other.begin(), other.end(), static_data_);
+        sz.is_big = 0;
+        std::copy(other.begin(), other.end(), static_data);
     } else {
-        sz_.is_big_ = 1;
-        dynamic_data_.capacity_ = other.dynamic_data_.capacity_;
-        dynamic_data_.pb = other.dynamic_data_.pb;
-        ++dynamic_data_.pb->ref_counter_;
+        sz.is_big = 1;
+        dynamic_data.capacity = other.dynamic_data.capacity;
+        dynamic_data.pb = other.dynamic_data.pb;
+        ++dynamic_data.pb->ref_counter;
     }
 }
 
@@ -92,111 +80,109 @@ number_storage::~number_storage() {
 }
 
 number_storage::number_t& number_storage::operator[](size_t i) {
-    if (sz_.is_big_ == 1) {
+    if (sz.is_big == 1) {
         separate();
-        return dynamic_data_.pb->data_[i];
+        return dynamic_data.pb->data[i];
     }
-    return static_data_[i];
+    return static_data[i];
 }
 
 number_storage::number_t const& number_storage::operator[](size_t i) const {
-    return sz_.is_big_ == 1 ?  dynamic_data_.pb->data_[i] : static_data_[i];
+    return sz.is_big == 1 ?  dynamic_data.pb->data[i] : static_data[i];
 }
 
 typename number_storage::iterator number_storage::begin() {
-    if (sz_.is_big_ == 1) {
+    if (sz.is_big == 1) {
         separate();
-        return dynamic_data_.pb->data_;
+        return dynamic_data.pb->data;
     }
-    return static_data_;
+    return static_data;
 }
 
 typename number_storage::iterator number_storage::end() {
-    if (sz_.is_big_ == 1) {
+    if (sz.is_big == 1) {
         separate();
-        return dynamic_data_.pb->data_ + sz_.size_;
+        return dynamic_data.pb->data + sz.size;
     }
-    return static_data_ + sz_.size_;
+    return static_data + sz.size;
 }
 
 typename number_storage::const_iterator number_storage::begin() const {
-    return sz_.is_big_ == 1 ? dynamic_data_.pb->data_ : static_data_;
+    return sz.is_big == 1 ? dynamic_data.pb->data : static_data;
 }
 
 typename number_storage::const_iterator number_storage::end() const {
-    return (sz_.is_big_ == 1 ? dynamic_data_.pb->data_ : static_data_) + sz_.size_;
+    return sz.is_big == 1 ? dynamic_data.pb->data + sz.size : static_data + sz.size;
 }
 
 size_t number_storage::size() const {
-    return sz_.size_;
+    return sz.size;
 }
 
 void number_storage::resize(size_t size, number_t val) {
-    if ((sz_.is_big_ == 1 && size > dynamic_data_.capacity_) || (sz_.is_big_ == 0 && size > MAX_STATIC_SIZE)) {
-        init_dynamic(size);
+    if ((sz.is_big == 1 && size > dynamic_data.capacity) || (sz.is_big == 0 && size > MAX_STATIC_SIZE)) {
+        init_dynamic(INCREASE_CAPACITY * size);
     }
-    if (sz_.is_big_ == 1) {
-        std::fill(dynamic_data_.pb->data_ + sz_.size_, dynamic_data_.pb->data_ + size, val);
-    } else {
-        std::fill(static_data_ + sz_.size_, static_data_ + size, val);
+    if (size > sz.size) {
+        if (sz.is_big == 1) {
+            std::fill(dynamic_data.pb->data + sz.size, dynamic_data.pb->data + size, val);
+        } else {
+            std::fill(static_data + sz.size, static_data + size, val);
+        }
     }
-    sz_.size_ = size;
-}
-
-void number_storage::resize(size_t size) {
-    resize(size, 0);
+    sz.size = size;
 }
 
 number_storage::number_t& number_storage::back() {
-    if (sz_.is_big_ == 1) {
+    if (sz.is_big == 1) {
         separate();
     }
-    return sz_.is_big_ == 1 ? dynamic_data_.pb->data_[sz_.size_ - 1] : static_data_[sz_.size_ - 1];
+    return sz.is_big == 1 ? dynamic_data.pb->data[sz.size - 1] : static_data[sz.size - 1];
 }
 
 number_storage::number_t const& number_storage::back() const {
-    return sz_.is_big_ == 1 ? dynamic_data_.pb->data_[sz_.size_ - 1] : static_data_[sz_.size_ - 1];
+    return sz.is_big == 1 ? dynamic_data.pb->data[sz.size - 1] : static_data[sz.size - 1];
 }
 
 void number_storage::push_back(number_t const& val) {
-    ++sz_.size_;
-    if (sz_.is_big_ != 1 && sz_.size_ <= MAX_STATIC_SIZE) {
-        static_data_[sz_.size_ - 1] = val;
+    if (sz.is_big != 1 && sz.size + 1 <= MAX_STATIC_SIZE) {
+        static_data[sz.size] = val;
     } else {
-        if (sz_.is_big_ == 1 && dynamic_data_.capacity_ >= sz_.size_) {
+        if (sz.is_big == 1 && dynamic_data.capacity >= sz.size + 1) {
             separate();
         } else {
-            init_dynamic(2 * sz_.size_);
+            init_dynamic(INCREASE_CAPACITY * (sz.size + 1));
         }
-        dynamic_data_.pb->data_[sz_.size_ - 1] = val;
+        dynamic_data.pb->data[sz.size] = val;
     }
+    ++sz.size;
 }
 
 void number_storage::pop_back() {
-    --sz_.size_;
+    --sz.size;
 }
 
 bool number_storage::empty() const {
-    return sz_.size_ == 0;
+    return sz.size == 0;
 }
 
 void number_storage::swap(number_storage& other) {
-    if (sz_.is_big_ == 1) {
-        if (other.sz_.is_big_ == 1) {
-            std::swap(dynamic_data_, other.dynamic_data_);
+    if (sz.is_big == 1) {
+        if (other.sz.is_big == 1) {
+            std::swap(dynamic_data, other.dynamic_data);
         } else {
-            flexible_data tmp = dynamic_data_;
-            std::copy(other.static_data_, other.static_data_ + MAX_STATIC_SIZE, static_data_);
-            other.dynamic_data_ = tmp;
+            flexible_data tmp = dynamic_data;
+            std::copy(other.static_data, other.static_data + MAX_STATIC_SIZE, static_data);
+            other.dynamic_data = tmp;
         }
     } else {
-        if (other.sz_.is_big_ == 1) {
-            flexible_data tmp = other.dynamic_data_;
-            std::copy(static_data_, static_data_ + MAX_STATIC_SIZE, other.static_data_);
-            dynamic_data_ = tmp;
+        if (other.sz.is_big == 1) {
+            flexible_data tmp = other.dynamic_data;
+            std::copy(static_data, static_data + MAX_STATIC_SIZE, other.static_data);
+            dynamic_data = tmp;
         } else {
-            std::swap_ranges(static_data_, static_data_ + MAX_STATIC_SIZE, other.static_data_);
+            std::swap_ranges(static_data, static_data + MAX_STATIC_SIZE, other.static_data);
         }
     }
-    std::swap(sz_, other.sz_);
+    std::swap(sz, other.sz);
 }
