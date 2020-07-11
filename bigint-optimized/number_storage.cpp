@@ -10,8 +10,8 @@
 
 // Helpful methods
 
-static number_storage::buffer* allocate_buffer(size_t size) {
-    auto buf = reinterpret_cast<number_storage::buffer*>(operator new (sizeof(buffer) + sizeof(number_storage::number_t) * size));
+static buffer* allocate_buffer(size_t size) {
+    auto buf = reinterpret_cast<buffer*>(operator new (sizeof(buffer) + sizeof(number_storage::number_t) * size));
     buf->ref_counter_ = 1;
     return buf;
 }

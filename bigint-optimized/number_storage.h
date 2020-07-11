@@ -4,36 +4,32 @@
 #include <cstdint>
 #include <utility>
 
+constexpr uint8_t SHIFT = sizeof(size_t) * 8 - 1;
 
-namespace {
-    constexpr uint8_t SHIFT = sizeof(size_t) * 8 - 1;
+struct buffer {
+    size_t ref_counter_;
+    uint32_t data_[];
+};
 
-    struct buffer {
-        size_t ref_counter_;
-        uint32_t data_[];
-    };
+struct flexible_data {
+    size_t capacity_ : SHIFT;
+    buffer* pb;
+};
 
-    struct flexible_data {
-        size_t capacity_ : SHIFT;
-        buffer* pb;
-    };
-
-    struct special_size {
-        size_t size_ : SHIFT;
-        size_t is_big_ : 1;
-        special_size(size_t size, size_t is_big) : size_(size), is_big_(is_big)
-        {}
-        special_size() : special_size(0, 0)
-        {}
-    };
-}
+struct special_size {
+    size_t size_ : SHIFT;
+    size_t is_big_ : 1;
+    special_size(size_t size, size_t is_big) : size_(size), is_big_(is_big)
+    {}
+    special_size() : special_size(0, 0)
+    {}
+};
 
 struct number_storage {
     using number_t = uint32_t;
     using big_number_t = uint64_t;
     using iterator = number_t *;
     using const_iterator = number_t const*;
-    using buffer = buffer;
 
     number_storage() = default;
     number_storage(size_t size, number_t val);
