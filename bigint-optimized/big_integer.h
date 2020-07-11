@@ -8,12 +8,17 @@
 #include "number_storage.h"
 
 class big_integer {
-    typedef number_storage::iterator iterator;
-    typedef number_storage::const_iterator const_iterator;
+    using iterator = number_storage::iterator;
+    using const_iterator = number_storage::const_iterator;
+    using number_t = number_storage::number_t;
+    using big_number_t = number_storage::big_number_t;
+
+    constexpr static big_number_t NUMBER_MAX = UINT32_MAX;
+    constexpr static big_number_t BASE = static_cast<big_number_t>(NUMBER_MAX) + 1;
 
     number_storage val_;
     bool sign_;
-    static uint64_t const BASE = static_cast<uint64_t>(UINT32_MAX) + 1;
+
 
     bool is_zero() const;
     // Delete useless zeros in the end of the number
@@ -22,9 +27,9 @@ class big_integer {
     // Functions given to sum_long_long :
 
     // val1' = val1 + val2 + carry
-    static void summator_pos(uint32_t& val1, uint32_t val2, uint64_t& carry);
+    static void summator_pos(number_t& val1, number_t val2, big_number_t& carry);
     // val1' = val1 - val2 - carry
-    static void summator_neg(uint32_t& val1, uint32_t val2, uint64_t& borrow);
+    static void summator_neg(number_t& val1, number_t val2, big_number_t& borrow);
 
     // Compare :
 
@@ -34,18 +39,18 @@ class big_integer {
     // Arithmetic operations (don't pay attention to the sign of the arguments):
 
     // lng' = lng + shrt
-    static void add_long_short(big_integer& lng, uint32_t shrt);
+    static void add_long_short(big_integer& lng, number_t shrt);
 
     // res = lng * shrt
-    static uint32_t mul_long_short(big_integer const& lng, uint32_t shrt, big_integer& res);
+    static number_t mul_long_short(big_integer const& lng, number_t shrt, big_integer& res);
 
     // lng' = lng / shrt
-    static uint32_t div_long_short(big_integer& lng, uint32_t shrt);
+    static number_t div_long_short(big_integer& lng, number_t shrt);
 
     // Apply the summator to the two transmitted sequences.
     // Precondition : it1_ - it1 >= it_2 - it2
-    static uint32_t sum_long_long(iterator it1, iterator it1_, const_iterator it2, const_iterator it2_,
-                                  void (*const summator)(uint32_t&, uint32_t, uint64_t&));
+    static number_t sum_long_long(iterator it1, iterator it1_, const_iterator it2, const_iterator it2_,
+                                  void (*const summator)(number_t&, number_t, uint64_t&));
 
     // lng1' = lng1 * lng2
     static void mul_long_long(big_integer& lng1, big_integer const& lng2);
@@ -56,16 +61,16 @@ class big_integer {
     // Precondition : lng1 >= lng2
     static std::pair<big_integer, big_integer> div_long_long(big_integer& lng1, big_integer const& lng2);
 
-    static uint32_t trial(big_integer const& lng1, big_integer const& lng2, uint32_t shift);
+    static uint32_t trial(big_integer const& lng1, big_integer const& lng2, number_t shift);
 
-    static bool smaller(big_integer const& lng1, big_integer const& lng2, uint32_t shift);
+    static bool smaller(big_integer const& lng1, big_integer const& lng2, number_t shift);
 
     // Methods for bit operations :
 
     void into_two_complement();
 
     // (*this)' = bit_op(*this, rhs)
-    void apply_bit_op(big_integer const & rhs, std::function<uint32_t(uint32_t, uint32_t)> const& bit_op);
+    void apply_bit_op(big_integer const & rhs, std::function<number_t(number_t, number_t)> const& bit_op);
 
 public:
     big_integer();
