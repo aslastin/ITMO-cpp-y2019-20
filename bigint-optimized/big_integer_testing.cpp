@@ -6,6 +6,7 @@
 #include <utility>
 #include <gtest/gtest.h>
 
+#include "number_storage.h"
 #include "big_integer.h"
 #include "big_integer_gmp.h"
 
