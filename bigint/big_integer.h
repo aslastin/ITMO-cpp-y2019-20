@@ -6,6 +6,8 @@
 #include <vector>
 #include <functional>
 
+
+
 class big_integer {
     typedef std::vector<uint32_t>::iterator iterator;
     typedef std::vector<uint32_t>::const_iterator const_iterator;
@@ -124,4 +126,3 @@ big_integer operator<<(big_integer a, int b);
 big_integer operator>>(big_integer a, int b);
 
 std::ostream& operator<<(std::ostream& s, big_integer const& a);
-
