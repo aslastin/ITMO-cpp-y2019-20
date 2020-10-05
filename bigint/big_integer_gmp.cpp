@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 big_integer_gmp::big_integer_gmp() {
   mpz_init(mpz);
