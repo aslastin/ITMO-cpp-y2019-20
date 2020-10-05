@@ -2,7 +2,8 @@
 #define BIG_INTEGER_GMP_H
 
 #include <cstddef>
-#include </usr/local/Cellar/gmp/6.2.0/include/gmp.h>
+#include <gmp.h>
+// #include </usr/local/Cellar/gmp/6.2.0/include/gmp.h>
 #include <iosfwd>
 
 struct big_integer_gmp {
